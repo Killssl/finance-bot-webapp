@@ -9,21 +9,20 @@ WEBHOOK_URL = f"https://{os.getenv('RENDER_EXTERNAL_HOSTNAME')}{WEBHOOK_PATH}"
 
 app = FastAPI()
 
-# создаем приложение Telegram
 application = Application.builder().token(BOT_TOKEN).build()
 
-# обработчик /start
+# /start команда
 async def start(update: Update, context):
     await update.message.reply_text("Привет! Я твой финансовый помощник.")
 
 application.add_handler(CommandHandler("start", start))
 
-# FastAPI endpoint для проверки
+# Эндпоинт для проверки
 @app.get("/")
 async def root():
     return {"message": "Finance Bot Backend is working with Telegram Webhook!"}
 
-# FastAPI endpoint для Telegram webhook
+# Telegram webhook
 @app.post(WEBHOOK_PATH)
 async def telegram_webhook(req: Request):
     json_data = await req.json()
@@ -31,8 +30,9 @@ async def telegram_webhook(req: Request):
     await application.process_update(update)
     return "ok"
 
-# запуск Webhook при старте
+# при запуске приложения
 @app.on_event("startup")
 async def on_startup():
+    await application.initialize()  # <-- вот эта строка ключевая!
     await application.bot.delete_webhook(drop_pending_updates=True)
     await application.bot.set_webhook(url=WEBHOOK_URL)
